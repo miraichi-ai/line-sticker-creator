@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LINEアニメーションスタンプをブラウザ上で簡単に作成。背景透過、画像分割、APNG生成をワンストップで。">
+  <title>LINE Animated Sticker Creator</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <!-- Libraries (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <!-- AI Background Removal -->
+  <script type="importmap">
+  {
+    "imports": {
+      "@imgly/background-removal": "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/dist/index.mjs"
+    }
+  }
+  </script>
+  <script type="module">
+    import imglyRemoveBackground from '@imgly/background-removal';
+    window.imglyRemoveBackground = imglyRemoveBackground;
+    window.dispatchEvent(new Event('imgly-ready'));
+  </script>
+</head>
+
+<body>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Loading Modal -->
+  <div class="modal-overlay" id="loadingModal">
+    <div class="modal" style="text-align:center;">
+      <div class="spinner" style="margin:0 auto var(--space-4);"></div>
+      <p id="loadingText" style="font-weight:500;">処理中...</p>
+      <div class="progress-bar" style="margin-top:var(--space-4);">
+        <div class="progress-bar-fill" id="loadingProgress" style="width:0%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-container">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-logo">
+        <div class="app-logo-icon">🎨</div>
+        <div>
+          <div class="app-logo-text">Sticker Creator</div>
+          <span class="app-logo-sub">LINE Animated Sticker Maker</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-3);">
+        <span class="spec-badge pass" id="headerStatus">
+          <span>✓</span> 準備完了
+        </span>
+      </div>
+    </header>
+
+    <!-- Step Navigation -->
+    <nav class="step-nav" id="stepNav">
+      <button class="step-nav-item active" data-step="0" id="stepNavBtn0">
+        <span class="step-number">1</span>
+        <span class="step-label">アップロード</span>
+      </button>
+      <div class="step-nav-connector" id="connector0"></div>
+      <button class="step-nav-item" data-step="1" id="stepNavBtn1">
+        <span class="step-number">2</span>
+        <span class="step-label">背景透過</span>
+      </button>
+      <div class="step-nav-connector" id="connector1"></div>
+      <button class="step-nav-item" data-step="2" id="stepNavBtn2">
+        <span class="step-number">3</span>
+        <span class="step-label">フレーム分割</span>
+      </button>
+      <div class="step-nav-connector" id="connector2"></div>
+      <button class="step-nav-item" data-step="3" id="stepNavBtn3">
+        <span class="step-number">4</span>
+        <span class="step-label">プレビュー</span>
+      </button>
+      <div class="step-nav-connector" id="connector3"></div>
+      <button class="step-nav-item" data-step="4" id="stepNavBtn4">
+        <span class="step-number">5</span>
+        <span class="step-label">エクスポート</span>
+      </button>
+    </nav>
+
+    <!-- ======================================
+       STEP 0: Upload
+       ====================================== -->
+    <section class="step-content active" id="step0">
+      <h1 class="step-title">📁 画像をアップロード</h1>
+      <p class="step-description">
+        アニメーションに使用する画像をアップロードしてください。個別フレーム画像またはスプライトシート（1枚にまとめた画像）に対応しています。
+      </p>
+
+      <div class="card">
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-zone-icon">📤</div>
+          <div class="drop-zone-text">画像をここにドラッグ＆ドロップ</div>
+          <div class="drop-zone-hint">
+            または <button class="btn btn-primary btn-sm" id="fileSelectBtn"
+              style="display:inline-flex;vertical-align:middle;">ファイルを選択</button>
+            <br><br>
+            <span style="color:var(--text-muted);font-size:var(--text-xs);">PNG / JPG / GIF / WebP 対応 ・ 複数選択可</span>
+          </div>
+          <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+        </div>
+
+        <div class="thumbnail-grid" id="thumbnailGrid"></div>
+
+        <div id="uploadActions" style="display:none;margin-top:var(--space-4);text-align:right;">
+          <button class="btn btn-ghost btn-sm" id="clearAllBtn">🗑 すべてクリア</button>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <div></div>
+        <button class="btn btn-primary" id="step0Next" disabled>
+          次へ：背景透過 →
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================
+       STEP 1: Background Removal
+       ====================================== -->
+    <section class="step-content" id="step1">
+      <h1 class="step-title">✨ 背景透過</h1>
+      <p class="step-description">
+        透明にしたい背景色を選んで、許容誤差を調整して背景を除去できます。<strong>透過済み画像の場合はスキップできます。</strong>
+      </p>
+
+      <!-- スキップ案内 -->
+      <div class="card"
+        style="margin-bottom:var(--space-4);padding:var(--space-4);border:1px solid var(--accent-cyan);background:rgba(116,185,255,0.05);">
+        <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;">
+          <span style="font-size:1.5rem;">💡</span>
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:600;margin-bottom:var(--space-1);">背景透過済みの画像をお使いですか？</div>
+            <div class="text-sm text-muted">Photoshopやデザインツールで背景透過した画像をアップロード済みであれば、このステップをスキップしてフレーム分割に進めます。</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="skipBgRemovalBtn">スキップして次へ →</button>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <!-- Canvas Area -->
+          <div class="card">
+            <div class="card-header">
+              <div class="tabs">
+                <button class="tab-btn active" id="tabOriginal">元画像</button>
+                <button class="tab-btn" id="tabResult">透過後</button>
+                <button class="tab-btn" id="tabCompare">比較</button>
+              </div>
+              <div style="display:flex;gap:var(--space-2);">
+                <button class="btn btn-sm btn-secondary" id="bgRemoveAllBtn">⚡ 一括適用</button>
+              </div>
+            </div>
+            <div class="canvas-container checkerboard" id="bgCanvasContainer" style="position:relative;">
+              <canvas id="bgCanvas" width="640" height="540"></canvas>
+              <!-- スポイトヒント -->
+              <div id="eyedropperHint"
+                style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;display:none;pointer-events:none;">
+                🎯 画像をクリックして背景色を取得
+              </div>
+            </div>
+          </div>
+
+          <!-- 背景色設定パネル -->
+          <div class="card" style="margin-top:var(--space-3);">
+            <div class="card-title" style="margin-bottom:var(--space-3);font-size:var(--text-sm);">
+              🎨 背景色の設定
+            </div>
+
+            <div style="display:flex;gap:var(--space-4);align-items:flex-start;flex-wrap:wrap;">
+              <!-- 背景色選択 -->
+              <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+                <label class="form-label">背景色を選択</label>
+                <div style="display:flex;align-items:center;gap:var(--space-2);">
+                  <input type="color" id="bgColorPicker" value="#3a3f4b"
+                    style="width:48px;height:48px;border:none;border-radius:var(--radius-sm);cursor:pointer;background:transparent;">
+                  <div style="display:flex;flex-direction:column;gap:var(--space-1);">
+                    <button class="btn btn-sm btn-secondary" id="eyedropperBtn" title="画像から色を取得">
+                      🎯 スポイト
+                    </button>
+                    <span class="text-xs text-muted" id="pickedColorHex">#3A3F4B</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 許容誤差スライダー -->
+              <div style="flex:1;min-width:200px;">
+                <div class="slider-group">
+                  <div class="slider-label">
+                    <span>許容誤差（色の範囲）</span>
+                    <span class="slider-value" id="toleranceDisplay">30</span>
+                  </div>
+                  <input type="range" id="toleranceSlider" min="0" max="120" step="1" value="30">
+                  <div
+                    style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px;">
+                    <span>厳密</span>
+                    <span>広め</span>
+                  </div>
+                </div>
+
+                <div class="slider-group" style="margin-top:var(--space-3);">
+                  <div class="slider-label">
+                    <span>エッジのなめらかさ</span>
+                    <span class="slider-value" id="softnessDisplay">15</span>
+                  </div>
+                  <input type="range" id="softnessSlider" min="0" max="50" step="1" value="15">
+                  <div
+                    style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:2px;">
+                    <span>くっきり</span>
+                    <span>なめらか</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 適用ボタン -->
+            <div style="margin-top:var(--space-4);display:flex;gap:var(--space-2);flex-wrap:wrap;">
+              <button class="btn btn-primary" id="applyBgRemovalBtn">✨ 背景を透過する</button>
+              <button class="btn btn-ghost btn-sm" id="resetBgBtn">🔄 リセット</button>
+              <button class="btn btn-ghost btn-sm" id="undoBgBtn">↩ 元に戻す</button>
+            </div>
+          </div>
+
+          <!-- ブラシ微調整ツールバー -->
+          <div class="card" style="margin-top:var(--space-3);">
+            <div class="card-title" style="margin-bottom:var(--space-3);font-size:var(--text-sm);">
+              🖌 手動ブラシで微調整
+            </div>
+            <div class="toolbar" id="brushToolbar">
+              <button class="btn-icon active" id="brushEraseBtn" title="消しゴム（背景を消す）">🧹 消す</button>
+              <button class="btn-icon" id="brushRestoreBtn" title="復元（背景を戻す）">🖌 戻す</button>
+              <div class="toolbar-divider"></div>
+              <div class="slider-group" style="flex:1;min-width:100px;">
+                <input type="range" id="brushSize" min="5" max="80" value="20">
+              </div>
+              <span class="slider-value" id="brushSizeDisplay" style="min-width:36px;text-align:center;">20px</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Selector Sidebar -->
+        <div class="two-col-sidebar">
+          <div class="card card-compact">
+            <div class="card-title" style="margin-bottom:var(--space-3);font-size:var(--text-sm);">
+              画像一覧
+              <span id="bgProcessCount" class="spec-badge pass" style="margin-left:var(--space-2);">0/0</span>
+            </div>
+            <div class="thumbnail-grid" id="bgThumbnailGrid"
+              style="grid-template-columns:repeat(auto-fill,minmax(70px,1fr));"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-ghost" id="step1Prev">← 戻る</button>
+        <button class="btn btn-primary" id="step1Next">
+          次へ：フレーム分割 →
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================
+       STEP 2: Frame Split
+       ====================================== -->
+    <section class="step-content" id="step2">
+      <h1 class="step-title">🔲 フレーム分割</h1>
+      <p class="step-description">
+        スプライトシートをグリッド分割するか、個別画像をそのままフレームとして使用します。
+      </p>
+
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="tabs" style="margin-bottom:var(--space-4);">
+              <button class="tab-btn active" id="tabGrid" data-mode="grid">グリッド分割</button>
+              <button class="tab-btn" id="tabIndividual" data-mode="individual">個別画像</button>
+            </div>
+
+            <!-- Grid Split Mode -->
+            <div id="gridSplitPanel">
+              <div class="canvas-container checkerboard">
+                <canvas id="splitCanvas" width="640" height="540"></canvas>
+              </div>
+
+              <div class="settings-grid" style="margin-top:var(--space-4);">
+                <div class="form-group">
+                  <label class="form-label">列数 (横)</label>
+                  <input type="number" class="form-input" id="gridCols" min="1" max="20" value="4">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">行数 (縦)</label>
+                  <input type="number" class="form-input" id="gridRows" min="1" max="20" value="1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">分割対象</label>
+                  <select class="form-select" id="splitTarget">
+                    <option value="0">画像 1</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="margin-top:var(--space-4);text-align:right;">
+                <button class="btn btn-primary" id="applySplitBtn">✂ 分割を実行</button>
+              </div>
+            </div>
+
+            <!-- Individual Mode -->
+            <div id="individualPanel" style="display:none;">
+              <div class="empty-state" id="individualEmpty">
+                <div class="empty-state-icon">📑</div>
+                <div class="empty-state-text">個別画像モード</div>
+                <p class="text-sm text-muted">アップロードした各画像がそのまま1フレームになります</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Frames sidebar -->
+        <div class="two-col-sidebar">
+          <div class="card card-compact">
+            <div class="card-header">
+              <div class="card-title" style="font-size:var(--text-sm);">
+                フレーム一覧
+                <span id="frameCountBadge" class="spec-badge pass" style="margin-left:var(--space-2);">0</span>
+              </div>
+            </div>
+            <div class="frame-list" id="frameList" style="flex-direction:column;max-height:500px;overflow-y:auto;">
+              <div class="empty-state" style="padding:var(--space-8) var(--space-4);">
+                <div class="empty-state-icon">🖼</div>
+                <p class="text-sm text-muted">フレームがありません</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-ghost" id="step2Prev">← 戻る</button>
+        <button class="btn btn-primary" id="step2Next" disabled>
+          次へ：プレビュー →
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================
+       STEP 3: Preview & Adjust
+       ====================================== -->
+    <section class="step-content" id="step3">
+      <h1 class="step-title">▶ プレビュー・調整</h1>
+      <p class="step-description">
+        アニメーションをプレビューし、再生速度やループ回数を調整します。
+      </p>
+
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="canvas-container checkerboard"
+              style="display:flex;align-items:center;justify-content:center;min-height:320px;">
+              <canvas id="previewCanvas" width="320" height="270"></canvas>
+            </div>
+
+            <!-- Player Controls -->
+            <div class="player-controls" style="margin-top:var(--space-3);">
+              <button class="play-btn" id="playBtn">▶</button>
+              <div class="player-timeline" id="playerTimeline">
+                <div class="player-timeline-fill" id="playerTimelineFill" style="width:0%;"></div>
+              </div>
+              <span class="player-time" id="playerTime">0 / 0</span>
+            </div>
+          </div>
+
+          <!-- Frame strip -->
+          <div class="frame-list" id="previewFrameList" style="margin-top:var(--space-3);">
+          </div>
+        </div>
+
+        <!-- Settings Sidebar -->
+        <div class="two-col-sidebar">
+          <div class="card card-compact">
+            <div class="card-title" style="margin-bottom:var(--space-4);font-size:var(--text-sm);">
+              ⚙ アニメーション設定
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-4);">
+              <div class="slider-group">
+                <div class="slider-label">
+                  <span>再生時間</span>
+                  <span class="slider-value" id="durationDisplay">2秒</span>
+                </div>
+                <input type="range" id="durationSlider" min="1" max="4" step="1" value="2">
+              </div>
+              <div class="slider-group">
+                <div class="slider-label">
+                  <span>ループ回数</span>
+                  <span class="slider-value" id="loopDisplay">4回</span>
+                </div>
+                <input type="range" id="loopSlider" min="1" max="4" step="1" value="4">
+              </div>
+              <div class="form-group">
+                <label class="form-label">出力サイズ</label>
+                <select class="form-select" id="outputSize">
+                  <option value="sticker">スタンプ (320×270)</option>
+                  <option value="main">メイン画像 (240×240)</option>
+                  <option value="tab">タブ画像 (96×74)</option>
+                  <option value="custom">カスタム</option>
+                </select>
+              </div>
+              <div id="customSizeGroup" style="display:none;">
+                <div class="settings-grid">
+                  <div class="form-group">
+                    <label class="form-label">幅 (px)</label>
+                    <input type="number" class="form-input" id="customWidth" value="320" min="1" max="1000">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">高さ (px)</label>
+                    <input type="number" class="form-input" id="customHeight" value="270" min="1" max="1000">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Spec Check -->
+          <div class="card card-compact" style="margin-top:var(--space-4);">
+            <div class="card-title" style="margin-bottom:var(--space-4);font-size:var(--text-sm);">
+              📋 仕様チェック
+            </div>
+            <ul class="spec-checklist" id="specChecklist">
+              <li class="spec-checklist-item" id="specSize">
+                <span class="spec-icon">⏳</span>
+                <span>画像サイズ (≤320×270)</span>
+              </li>
+              <li class="spec-checklist-item" id="specFrames">
+                <span class="spec-icon">⏳</span>
+                <span>フレーム数 (5〜20)</span>
+              </li>
+              <li class="spec-checklist-item" id="specDuration">
+                <span class="spec-icon">⏳</span>
+                <span>再生時間 (1〜4秒)</span>
+              </li>
+              <li class="spec-checklist-item" id="specLoop">
+                <span class="spec-icon">⏳</span>
+                <span>ループ (再生時間×ループ ≤ 4秒)</span>
+              </li>
+              <li class="spec-checklist-item" id="specFileSize">
+                <span class="spec-icon">⏳</span>
+                <span>ファイルサイズ (≤300KB)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-ghost" id="step3Prev">← 戻る</button>
+        <button class="btn btn-primary" id="step3Next">
+          次へ：エクスポート →
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================
+       STEP 4: Export
+       ====================================== -->
+    <section class="step-content" id="step4">
+      <h1 class="step-title">💾 エクスポート</h1>
+      <p class="step-description">
+        APNGファイルを生成し、ダウンロードします。
+      </p>
+
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="canvas-container checkerboard"
+              style="display:flex;align-items:center;justify-content:center;min-height:300px;">
+              <canvas id="exportPreviewCanvas" width="320" height="270"></canvas>
+            </div>
+            <div style="margin-top:var(--space-4);text-align:center;">
+              <div id="exportFileInfo" class="text-sm text-muted"></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:var(--space-3);margin-top:var(--space-4);flex-wrap:wrap;">
+            <button class="btn btn-primary btn-lg" id="generateApngBtn" style="flex:1;">
+              🎬 APNG を生成
+            </button>
+            <button class="btn btn-success btn-lg" id="downloadApngBtn" style="flex:1;" disabled>
+              💾 ダウンロード
+            </button>
+          </div>
+
+          <!-- ダウンロード情報 -->
+          <div class="card"
+            style="margin-top:var(--space-3);padding:var(--space-3);border:1px solid var(--border-color);">
+            <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);">
+              <span>📁</span>
+              <span id="filenamePreview" style="font-weight:600;font-size:var(--text-sm);">保存ファイル名: 01.png</span>
+            </div>
+            <div class="text-xs text-muted">
+              💡 ダウンロードファイルは<strong>ブラウザのダウンロードフォルダ</strong>（通常: ~/Downloads）に保存されます。<br>
+              保存先を指定したい場合は、ブラウザ設定で「ダウンロード前にファイルの保存場所を確認する」をONにしてください。
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col-sidebar">
+          <!-- Export Settings -->
+          <div class="card card-compact">
+            <div class="card-title" style="margin-bottom:var(--space-4);font-size:var(--text-sm);">
+              ⚙ エクスポート設定
+            </div>
+            <div style="display:flex;flex-direction:column;gap:var(--space-4);">
+              <div class="slider-group">
+                <div class="slider-label">
+                  <span>品質 (色数)</span>
+                  <span class="slider-value" id="qualityDisplay">256色</span>
+                </div>
+                <input type="range" id="qualitySlider" min="32" max="256" step="32" value="256">
+              </div>
+              <div class="form-group">
+                <label class="form-label">ファイル名</label>
+                <input type="text" class="form-input" id="exportFilename" value="01" placeholder="ファイル名">
+              </div>
+            </div>
+          </div>
+
+          <!-- Batch Export -->
+          <div class="card card-compact" style="margin-top:var(--space-4);">
+            <div class="card-title" style="margin-bottom:var(--space-4);font-size:var(--text-sm);">
+              📦 一括エクスポート
+            </div>
+            <p class="text-sm text-muted" style="margin-bottom:var(--space-4);">
+              全スタンプをZIPファイルにまとめてダウンロードします。
+            </p>
+            <button class="btn btn-secondary" id="downloadZipBtn" style="width:100%;" disabled>
+              📦 ZIP ダウンロード
+            </button>
+          </div>
+
+          <!-- Final Spec Check -->
+          <div class="card card-compact" style="margin-top:var(--space-4);">
+            <div class="card-title" style="margin-bottom:var(--space-4);font-size:var(--text-sm);">
+              ✅ 最終チェック
+            </div>
+            <ul class="spec-checklist" id="finalSpecChecklist">
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-ghost" id="step4Prev">← 戻る</button>
+        <div></div>
+      </div>
+    </section>
+
+  </div><!-- /app-container -->
+
+  <!-- Scripts -->
+  <script src="js/utils.js"></script>
+  <script src="js/image-upload.js"></script>
+  <script src="js/background-remover.js"></script>
+  <script src="js/image-splitter.js"></script>
+  <script src="js/apng-generator.js"></script>
+  <script src="js/preview.js"></script>
+  <script src="js/exporter.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
