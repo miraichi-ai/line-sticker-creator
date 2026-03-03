@@ -507,6 +507,37 @@ input[type="range"]::-moz-range-thumb {
     font-weight: 600;
 }
 
+.frame-delete-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(225, 112, 85, 0.85);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-fast), background var(--transition-fast);
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    z-index: 2;
+}
+
+.frame-item:hover .frame-delete-btn {
+    opacity: 1;
+}
+
+.frame-delete-btn:hover {
+    background: var(--accent-red);
+    transform: scale(1.15);
+}
+
 /* ---------- Spec Check Badge ---------- */
 .spec-badge {
     display: inline-flex;

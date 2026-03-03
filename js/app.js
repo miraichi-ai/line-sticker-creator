@@ -5,7 +5,7 @@
 
 const App = (() => {
     let currentStep = 0;
-    const TOTAL_STEPS = 5;
+    const TOTAL_STEPS = 6;
     const completedSteps = new Set();
 
     function init() {
@@ -15,6 +15,7 @@ const App = (() => {
         ImageSplitter.init();
         Preview.init();
         Exporter.init();
+        LineAssets.init();
 
         // ステップナビゲーション
         document.querySelectorAll('.step-nav-item').forEach(btn => {
@@ -51,6 +52,11 @@ const App = (() => {
             goToStep(4);
         });
         document.getElementById('step4Prev').addEventListener('click', () => goToStep(3));
+        document.getElementById('step4Next').addEventListener('click', () => {
+            onLeaveStep(4);
+            goToStep(5);
+        });
+        document.getElementById('step5Prev').addEventListener('click', () => goToStep(4));
 
         // 画像アップロード変更コールバック
         ImageUpload.onChange((images) => {
@@ -122,6 +128,10 @@ const App = (() => {
 
             case 4: // エクスポート
                 // プレビュー停止
+                Preview.stop();
+                break;
+
+            case 5: // LINE素材生成
                 Preview.stop();
                 break;
         }

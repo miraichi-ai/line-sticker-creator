@@ -91,6 +91,11 @@
         <span class="step-number">5</span>
         <span class="step-label">エクスポート</span>
       </button>
+      <div class="step-nav-connector" id="connector4"></div>
+      <button class="step-nav-item" data-step="5" id="stepNavBtn5">
+        <span class="step-number">6</span>
+        <span class="step-label">LINE素材</span>
+      </button>
     </nav>
 
     <!-- ======================================
@@ -564,6 +569,110 @@
 
       <div class="step-actions">
         <button class="btn btn-ghost" id="step4Prev">← 戻る</button>
+        <button class="btn btn-primary" id="step4Next">
+          次へ：LINE素材生成 →
+        </button>
+      </div>
+    </section>
+
+    <!-- ======================================
+       STEP 5: LINE Assets (Main & Tab Image)
+       ====================================== -->
+    <section class="step-content" id="step5">
+      <h1 class="step-title">📱 LINE素材生成</h1>
+      <p class="step-description">
+        スタンプ用APNGからメイン画像（240×240 APNG）とタブ画像（96×74 PNG）を自動生成します。
+      </p>
+
+      <!-- APNG入力 -->
+      <div class="card" style="margin-bottom:var(--space-4);">
+        <div class="card-title" style="margin-bottom:var(--space-4);font-size:var(--text-sm);">
+          📤 APNG画像を入力
+        </div>
+
+        <!-- Step 4からの引き継ぎボタン -->
+        <div style="margin-bottom:var(--space-4);">
+          <button class="btn btn-secondary" id="useExportedApngBtn">
+            ⬆ Step 5で生成したAPNGを使用
+          </button>
+          <span class="text-xs text-muted" style="margin-left:var(--space-2);">エクスポート済みのAPNGを自動で読み込みます</span>
+        </div>
+
+        <div class="drop-zone" id="lineAssetsDropZone" style="padding:var(--space-8) var(--space-4);">
+          <div class="drop-zone-icon">🖼</div>
+          <div class="drop-zone-text">APNGファイルをドラッグ＆ドロップ</div>
+          <div class="drop-zone-hint">
+            または <button class="btn btn-primary btn-sm" id="lineAssetsFileSelectBtn"
+              style="display:inline-flex;vertical-align:middle;">ファイルを選択</button>
+            <br><br>
+            <span style="color:var(--text-muted);font-size:var(--text-xs);">APNG / PNG 対応</span>
+          </div>
+          <input type="file" id="lineAssetsFileInput" accept=".png,.apng,image/png" style="display:none;">
+        </div>
+
+        <div id="lineAssetsInputInfo"
+          style="display:none;margin-top:var(--space-3);align-items:center;gap:var(--space-3);flex-wrap:wrap;">
+        </div>
+      </div>
+
+      <!-- 生成結果 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+        <!-- メイン画像 -->
+        <div class="card" id="mainImageCard" style="display:none;">
+          <div class="card-title" style="margin-bottom:var(--space-3);font-size:var(--text-sm);">
+            🎯 メイン画像（240×240）
+          </div>
+          <div class="canvas-container checkerboard"
+            style="display:flex;align-items:center;justify-content:center;min-height:200px;">
+            <img id="mainImagePreview" style="display:none;max-width:100%;height:auto;image-rendering:auto;"
+              alt="メイン画像プレビュー">
+          </div>
+          <div class="text-sm text-muted" id="mainImageSize" style="margin-top:var(--space-2);text-align:center;"></div>
+          <button class="btn btn-primary" id="downloadMainImageBtn" style="width:100%;margin-top:var(--space-3);"
+            disabled>
+            💾 メイン画像をダウンロード
+          </button>
+        </div>
+
+        <!-- タブ画像 -->
+        <div class="card" id="tabImageCard" style="display:none;">
+          <div class="card-title" style="margin-bottom:var(--space-3);font-size:var(--text-sm);">
+            📑 タブ画像（96×74）
+          </div>
+          <div class="canvas-container checkerboard"
+            style="display:flex;align-items:center;justify-content:center;min-height:200px;">
+            <img id="tabImagePreview" style="display:none;max-width:100%;height:auto;image-rendering:auto;"
+              alt="タブ画像プレビュー">
+          </div>
+          <div class="text-sm text-muted" id="tabImageSize" style="margin-top:var(--space-2);text-align:center;"></div>
+          <button class="btn btn-success" id="downloadTabImageBtn" style="width:100%;margin-top:var(--space-3);"
+            disabled>
+            💾 タブ画像をダウンロード
+          </button>
+        </div>
+      </div>
+
+      <!-- 一括ダウンロード -->
+      <div style="margin-top:var(--space-4);">
+        <button class="btn btn-primary btn-lg" id="downloadAllAssetsBtn" style="width:100%;" disabled>
+          📦 メイン画像・タブ画像を一括ダウンロード（ZIP）
+        </button>
+      </div>
+
+      <!-- 仕様メモ -->
+      <div class="card"
+        style="margin-top:var(--space-4);padding:var(--space-4);border:1px solid var(--accent-cyan);background:rgba(116,185,255,0.05);">
+        <div style="font-weight:600;margin-bottom:var(--space-2);">📋 LINE スタンプ画像仕様</div>
+        <div class="text-sm text-muted" style="display:flex;flex-direction:column;gap:var(--space-2);">
+          <div>🎯 <strong>メイン画像</strong>：W 240 × H 240（APNG）</div>
+          <div>📑 <strong>タブ画像</strong>：W 96 × H 74（PNG・静止画）</div>
+          <div>📐 <strong>スタンプ画像</strong>：W 320 × H 270（APNG・最大）</div>
+          <div>📦 <strong>ファイルサイズ</strong>：各300KB以下</div>
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn btn-ghost" id="step5Prev">← 戻る</button>
         <div></div>
       </div>
     </section>
@@ -578,6 +687,7 @@
   <script src="js/apng-generator.js"></script>
   <script src="js/preview.js"></script>
   <script src="js/exporter.js"></script>
+  <script src="js/line-assets.js"></script>
   <script src="js/app.js"></script>
 </body>
 

@@ -295,6 +295,7 @@ const Exporter = (() => {
 
     return {
         init,
-        generateAPNG
+        generateAPNG,
+        getGeneratedBlob: () => generatedBlob
     };
 })();

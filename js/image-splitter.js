@@ -230,6 +230,7 @@ const ImageSplitter = (() => {
         frames.forEach((frame, i) => {
             const div = document.createElement('div');
             div.className = 'frame-item checkerboard';
+            div.style.position = 'relative';
             div.draggable = true;
             div.dataset.index = i;
 
@@ -241,8 +242,20 @@ const ImageSplitter = (() => {
             num.className = 'frame-number';
             num.textContent = i + 1;
 
+            // 削除ボタン
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'frame-delete-btn';
+            deleteBtn.textContent = '×';
+            deleteBtn.title = `フレーム ${i + 1} を削除`;
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeFrame(i);
+                Utils.showToast(`フレーム ${i + 1} を削除しました`, 'info');
+            });
+
             div.appendChild(img);
             div.appendChild(num);
+            div.appendChild(deleteBtn);
 
             // ドラッグ&ドロップで並べ替え
             div.addEventListener('dragstart', (e) => {
