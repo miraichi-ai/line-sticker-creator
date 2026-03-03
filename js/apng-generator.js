@@ -27,20 +27,16 @@ const APNGGenerator = (() => {
         // 各フレームをリサイズしてRGBAデータを取得
         const frames = [];
         const delays = [];
-        const totalMs = duration * 1000;
-        const baseDelay = Math.floor(totalMs / frameCanvases.length);
-        const remainder = totalMs - (baseDelay * frameCanvases.length);
+        // LINEでエラーにならない割り切れる秒数を前提とするため、Math.roundで均等なミリ秒を作成
+        const frameDelay = Math.round((duration * 1000) / frameCanvases.length);
 
         for (let i = 0; i < frameCanvases.length; i++) {
-            // 端数を最初のN個のフレームに1msずつ分散して合計を正確に一致させる
-            const delay = (i < remainder) ? baseDelay + 1 : baseDelay;
-
             // フレームをアスペクト比維持でリサイズし、中央配置
             const resized = resizeFrameToFit(frameCanvases[i], width, height);
             const ctx = resized.getContext('2d');
             const imageData = ctx.getImageData(0, 0, width, height);
             frames.push(imageData.data.buffer);
-            delays.push(delay);
+            delays.push(frameDelay);
         }
 
         // UPNG.jsでAPNGエンコード
@@ -49,12 +45,8 @@ const APNGGenerator = (() => {
         const cnum = quality === 256 ? 0 : quality;
         const apngData = UPNG.encode(frames, width, height, cnum, delays);
 
-        // ループ回数(acTL)とフレーム遅延分数(fcTL)を直接バイナリパッチ
-        const modifiedData = patchAPNGMetadata(apngData, {
-            loopCount: loops,
-            duration: duration,
-            frameCount: frameCanvases.length
-        });
+        // ループ回数(acTL)を書き込み（fcTLパッチは削除）
+        const modifiedData = setAPNGLoopCount(apngData, loops);
 
         return new Blob([modifiedData], { type: 'image/png' });
     }
@@ -86,15 +78,15 @@ const APNGGenerator = (() => {
     }
 
     /**
-     * APNGバイナリのメタデータ（ループ回数・完全均等フレーム遅延）をパッチ
-     * LINEアニメーションスタンプは「数学的に完全に合計秒数と一致」することを要求するため、
-     * fcTLチャンクに delay_num / delay_den を分数で直接強制設定する。
+     * APNGバイナリのacTLチャンクのループ回数を設定
+     * acTLチャンクは: num_frames (4bytes) + num_plays (4bytes)
+     * num_plays: 0 = infinite loop, N = N times
      */
-    function patchAPNGMetadata(apngBuffer, options) {
+    function setAPNGLoopCount(apngBuffer, loopCount) {
         const data = new Uint8Array(apngBuffer);
         const dv = new DataView(data.buffer);
 
-        // PNGシグネチャ(8bytes) + IHDRチャンク後に各種チャンクを探す
+        // PNGシグネチャ(8bytes) + IHDRチャンク後にacTLチャンクを探す
         let offset = 8; // Skip PNG signature
 
         while (offset < data.length - 8) {
@@ -105,22 +97,15 @@ const APNGGenerator = (() => {
             );
 
             if (chunkType === 'acTL') {
-                // acTL offset+8 = num_frames (4 bytes), offset+12 = num_plays (4 bytes)
-                dv.setUint32(offset + 12, options.loopCount);
+                // acTL found: offset+8 = num_frames (4 bytes), offset+12 = num_plays (4 bytes)
+                dv.setUint32(offset + 12, loopCount);
 
                 // CRC再計算
                 const crcData = data.slice(offset + 4, offset + 8 + chunkLength);
-                dv.setUint32(offset + 8 + chunkLength, crc32(crcData));
-            }
-            else if (chunkType === 'fcTL') {
-                // fcTL offset+28 = delay_num (2 bytes), offset+30 = delay_den (2 bytes)
-                // delay_num / delay_den 秒になるように強制設定 (例: 3/14 秒)
-                dv.setUint16(offset + 28, options.duration);
-                dv.setUint16(offset + 30, options.frameCount);
+                const crc = crc32(crcData);
+                dv.setUint32(offset + 8 + chunkLength, crc);
 
-                // CRC再計算
-                const crcData = data.slice(offset + 4, offset + 8 + chunkLength);
-                dv.setUint32(offset + 8 + chunkLength, crc32(crcData));
+                break;
             }
 
             // 次のチャンクへ (length + type(4) + data(length) + crc(4))

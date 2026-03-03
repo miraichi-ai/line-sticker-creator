@@ -203,12 +203,17 @@ const Utils = (() => {
       detail: frameCount < 5 ? '5フレーム以上必要です' : (frameCount > 20 ? '20フレーム以下にしてください' : 'OK')
     });
 
-    // 再生時間チェック
+    // 再生時間・割り切れるかチェック
+    const isDurationValid = duration >= 1 && duration <= 4 && Number.isInteger(duration);
+    const isDivisible = (duration * 1000) % frameCount === 0;
+
     results.push({
       id: 'duration',
-      label: `再生時間 (${duration}秒)`,
-      pass: duration >= 1 && duration <= 4 && Number.isInteger(duration),
-      detail: 'OK'
+      label: `再生時間 (${duration}秒・割り切り判定)`,
+      pass: isDurationValid && isDivisible,
+      detail: !isDurationValid
+        ? '再生時間は1〜4秒の整数にしてください'
+        : (!isDivisible ? `${frameCount}フレームで${duration}秒は割り切れません。フレーム数を調整してください` : 'OK')
     });
 
     // ループチェック
