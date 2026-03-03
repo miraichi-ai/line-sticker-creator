@@ -218,8 +218,12 @@ const Preview = (() => {
         list.innerHTML = '';
 
         frames.forEach((frame, i) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'frame-strip-wrapper';
+
             const div = document.createElement('div');
             div.className = `frame-item checkerboard ${i === currentFrame ? 'active' : ''}`;
+            div.draggable = true;
 
             const img = document.createElement('img');
             img.src = frame.canvas.toDataURL();
@@ -238,8 +242,74 @@ const Preview = (() => {
                 updateTimeline();
             });
 
-            list.appendChild(div);
+            // ドラッグ&ドロップ
+            div.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', i);
+                div.classList.add('dragging');
+            });
+            div.addEventListener('dragend', () => {
+                div.classList.remove('dragging');
+            });
+            wrapper.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                wrapper.classList.add('frame-strip-dragover');
+            });
+            wrapper.addEventListener('dragleave', () => {
+                wrapper.classList.remove('frame-strip-dragover');
+            });
+            wrapper.addEventListener('drop', (e) => {
+                e.preventDefault();
+                wrapper.classList.remove('frame-strip-dragover');
+                const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                if (fromIndex !== i) {
+                    reorderFrame(fromIndex, i);
+                }
+            });
+
+            // 左右矢印ボタン
+            const controls = document.createElement('div');
+            controls.className = 'frame-strip-controls';
+
+            const leftBtn = document.createElement('button');
+            leftBtn.className = 'frame-strip-btn';
+            leftBtn.textContent = '←';
+            leftBtn.disabled = i === 0;
+            leftBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                reorderFrame(i, i - 1);
+            });
+
+            const rightBtn = document.createElement('button');
+            rightBtn.className = 'frame-strip-btn';
+            rightBtn.textContent = '→';
+            rightBtn.disabled = i === frames.length - 1;
+            rightBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                reorderFrame(i, i + 1);
+            });
+
+            controls.appendChild(leftBtn);
+            controls.appendChild(rightBtn);
+
+            wrapper.appendChild(div);
+            wrapper.appendChild(controls);
+            list.appendChild(wrapper);
         });
+    }
+
+    /**
+     * フレームを並べ替え（ImageSplitterと同期）
+     */
+    function reorderFrame(fromIndex, toIndex) {
+        if (toIndex < 0 || toIndex >= frames.length) return;
+        const movedFrame = frames.splice(fromIndex, 1)[0];
+        frames.splice(toIndex, 0, movedFrame);
+        // ImageSplitterのframes配列も同期（UIは再描画しない）
+        ImageSplitter.moveFrame(fromIndex, toIndex, true);
+        currentFrame = toIndex;
+        renderFrameStrip();
+        drawFrame(currentFrame);
+        updateTimeline();
     }
 
     /**

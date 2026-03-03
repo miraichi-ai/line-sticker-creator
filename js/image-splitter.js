@@ -229,10 +229,14 @@ const ImageSplitter = (() => {
 
         frames.forEach((frame, i) => {
             const div = document.createElement('div');
-            div.className = 'frame-item checkerboard';
-            div.style.position = 'relative';
-            div.draggable = true;
+            div.className = 'frame-item-row';
             div.dataset.index = i;
+
+            // サムネイル
+            const thumb = document.createElement('div');
+            thumb.className = 'frame-item checkerboard';
+            thumb.style.position = 'relative';
+            thumb.draggable = true;
 
             const img = document.createElement('img');
             img.src = frame.canvas.toDataURL();
@@ -242,9 +246,36 @@ const ImageSplitter = (() => {
             num.className = 'frame-number';
             num.textContent = i + 1;
 
+            thumb.appendChild(img);
+            thumb.appendChild(num);
+
+            // 並べ替えボタン
+            const controls = document.createElement('div');
+            controls.className = 'frame-reorder-controls';
+
+            const upBtn = document.createElement('button');
+            upBtn.className = 'frame-reorder-btn';
+            upBtn.textContent = '↑';
+            upBtn.title = '上に移動';
+            upBtn.disabled = i === 0;
+            upBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moveFrame(i, i - 1);
+            });
+
+            const downBtn = document.createElement('button');
+            downBtn.className = 'frame-reorder-btn';
+            downBtn.textContent = '↓';
+            downBtn.title = '下に移動';
+            downBtn.disabled = i === frames.length - 1;
+            downBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moveFrame(i, i + 1);
+            });
+
             // 削除ボタン
             const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'frame-delete-btn';
+            deleteBtn.className = 'frame-reorder-btn frame-reorder-btn-delete';
             deleteBtn.textContent = '×';
             deleteBtn.title = `フレーム ${i + 1} を削除`;
             deleteBtn.addEventListener('click', (e) => {
@@ -253,38 +284,58 @@ const ImageSplitter = (() => {
                 Utils.showToast(`フレーム ${i + 1} を削除しました`, 'info');
             });
 
-            div.appendChild(img);
-            div.appendChild(num);
-            div.appendChild(deleteBtn);
+            controls.appendChild(upBtn);
+            controls.appendChild(downBtn);
+            controls.appendChild(deleteBtn);
+
+            div.appendChild(thumb);
+            div.appendChild(controls);
 
             // ドラッグ&ドロップで並べ替え
-            div.addEventListener('dragstart', (e) => {
+            thumb.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', i);
-                div.classList.add('dragging');
+                thumb.classList.add('dragging');
             });
 
-            div.addEventListener('dragend', () => {
-                div.classList.remove('dragging');
+            thumb.addEventListener('dragend', () => {
+                thumb.classList.remove('dragging');
             });
 
             div.addEventListener('dragover', (e) => {
                 e.preventDefault();
+                div.classList.add('frame-item-row-dragover');
+            });
+
+            div.addEventListener('dragleave', () => {
+                div.classList.remove('frame-item-row-dragover');
             });
 
             div.addEventListener('drop', (e) => {
                 e.preventDefault();
+                div.classList.remove('frame-item-row-dragover');
                 const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
                 const toIndex = i;
                 if (fromIndex !== toIndex) {
-                    const movedFrame = frames.splice(fromIndex, 1)[0];
-                    frames.splice(toIndex, 0, movedFrame);
-                    renderFrameList();
-                    notifyChange();
+                    moveFrame(fromIndex, toIndex);
                 }
             });
 
             list.appendChild(div);
         });
+    }
+
+    /**
+     * フレームを移動
+     * @param {boolean} silent - trueなら配列操作のみ（外部から同期用）
+     */
+    function moveFrame(fromIndex, toIndex, silent = false) {
+        if (toIndex < 0 || toIndex >= frames.length) return;
+        const movedFrame = frames.splice(fromIndex, 1)[0];
+        frames.splice(toIndex, 0, movedFrame);
+        if (!silent) {
+            renderFrameList();
+            notifyChange();
+        }
     }
 
     /**
@@ -326,6 +377,7 @@ const ImageSplitter = (() => {
         getFrameCount,
         onChange,
         renderFrameList,
+        moveFrame,
         drawGridPreview,
         useIndividualFrames
     };

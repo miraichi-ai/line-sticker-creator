@@ -818,3 +818,107 @@ input[type="range"]::-moz-range-thumb {
         min-width: 100%;
     }
 }
+
+/* ---------- Frame Reorder Controls (Step 2) ---------- */
+.frame-item-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) 0;
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast);
+}
+
+.frame-item-row-dragover {
+    background: rgba(108, 92, 231, 0.15);
+    border-radius: var(--radius-md);
+}
+
+.frame-reorder-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.frame-reorder-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: 0;
+}
+
+.frame-reorder-btn:hover:not(:disabled) {
+    background: var(--accent-primary);
+    color: #fff;
+    border-color: var(--accent-primary);
+}
+
+.frame-reorder-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.frame-reorder-btn-delete {
+    color: var(--accent-red);
+}
+
+.frame-reorder-btn-delete:hover:not(:disabled) {
+    background: var(--accent-red);
+    color: #fff;
+    border-color: var(--accent-red);
+}
+
+/* ---------- Frame Strip Controls (Step 3) ---------- */
+.frame-strip-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.frame-strip-dragover {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+.frame-strip-controls {
+    display: flex;
+    gap: 2px;
+}
+
+.frame-strip-btn {
+    width: 24px;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--text-tertiary);
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: 0;
+}
+
+.frame-strip-btn:hover:not(:disabled) {
+    background: var(--accent-primary);
+    color: #fff;
+}
+
+.frame-strip-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
