@@ -27,15 +27,20 @@ const APNGGenerator = (() => {
         // 各フレームをリサイズしてRGBAデータを取得
         const frames = [];
         const delays = [];
-        const frameDelay = Math.round((duration * 1000) / frameCanvases.length);
+        const totalMs = duration * 1000;
+        const baseDelay = Math.floor(totalMs / frameCanvases.length);
+        const remainder = totalMs - (baseDelay * frameCanvases.length);
 
-        for (const srcCanvas of frameCanvases) {
+        for (let i = 0; i < frameCanvases.length; i++) {
+            // 端数を最初のN個のフレームに1msずつ分散して合計を正確に一致させる
+            const delay = (i < remainder) ? baseDelay + 1 : baseDelay;
+
             // フレームをアスペクト比維持でリサイズし、中央配置
-            const resized = resizeFrameToFit(srcCanvas, width, height);
+            const resized = resizeFrameToFit(frameCanvases[i], width, height);
             const ctx = resized.getContext('2d');
             const imageData = ctx.getImageData(0, 0, width, height);
             frames.push(imageData.data.buffer);
-            delays.push(frameDelay);
+            delays.push(delay);
         }
 
         // UPNG.jsでAPNGエンコード
