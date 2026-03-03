@@ -15,8 +15,8 @@ const APNGGenerator = (() => {
         const {
             width = 320,
             height = 270,
-            duration = 2,
-            loops = 4,
+            duration = 4,
+            loops = 1,
             quality = 0    // 0 = lossless (full RGBA), >0 = palette color count
         } = options;
 

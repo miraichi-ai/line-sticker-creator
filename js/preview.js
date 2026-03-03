@@ -7,8 +7,8 @@ const Preview = (() => {
     let currentFrame = 0;
     let isPlaying = false;
     let animationTimer = null;
-    let duration = 2;  // 秒
-    let loops = 4;
+    let duration = 4;  // 秒
+    let loops = 1;
     let outputWidth = 320;
     let outputHeight = 270;
 
