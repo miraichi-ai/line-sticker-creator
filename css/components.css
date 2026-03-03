@@ -762,3 +762,59 @@ input[type="range"]::-moz-range-thumb {
         padding: var(--space-4);
     }
 }
+
+/* ---------- Preview Settings Bar ---------- */
+.preview-settings-bar {
+    padding: var(--space-4);
+}
+
+.preview-settings-bar-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+}
+
+.preview-settings-row {
+    display: flex;
+    gap: var(--space-6);
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.preview-setting-item {
+    flex: 1;
+    min-width: 160px;
+}
+
+/* 仕様チェックリスト 横並び */
+.spec-checklist-horizontal {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.spec-checklist-horizontal .spec-checklist-item {
+    flex: 1;
+    min-width: 140px;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+}
+
+@media (max-width: 767px) {
+    .preview-settings-row {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    .preview-setting-item {
+        min-width: 100%;
+    }
+
+    .spec-checklist-horizontal {
+        flex-direction: column;
+    }
+
+    .spec-checklist-horizontal .spec-checklist-item {
+        min-width: 100%;
+    }
+}

@@ -371,103 +371,101 @@
         アニメーションをプレビューし、再生速度やループ回数を調整します。
       </p>
 
-      <div class="two-col">
-        <div>
-          <div class="card">
-            <div class="canvas-container checkerboard"
-              style="display:flex;align-items:center;justify-content:center;min-height:320px;">
-              <canvas id="previewCanvas" width="320" height="270"></canvas>
-            </div>
-
-            <!-- Player Controls -->
-            <div class="player-controls" style="margin-top:var(--space-3);">
-              <button class="play-btn" id="playBtn">▶</button>
-              <div class="player-timeline" id="playerTimeline">
-                <div class="player-timeline-fill" id="playerTimelineFill" style="width:0%;"></div>
+      <!-- アニメーション設定バー（プレビュー上部） -->
+      <div class="card preview-settings-bar">
+        <div class="preview-settings-bar-title">⚙ アニメーション設定</div>
+        <div class="preview-settings-row">
+          <div class="preview-setting-item">
+            <div class="slider-group">
+              <div class="slider-label">
+                <span>再生時間</span>
+                <span class="slider-value" id="durationDisplay">4秒</span>
               </div>
-              <span class="player-time" id="playerTime">0 / 0</span>
+              <input type="range" id="durationSlider" min="1" max="4" step="1" value="4">
             </div>
           </div>
-
-          <!-- Frame strip -->
-          <div class="frame-list" id="previewFrameList" style="margin-top:var(--space-3);">
-          </div>
-        </div>
-
-        <!-- Settings Sidebar -->
-        <div class="two-col-sidebar">
-          <div class="card card-compact">
-            <div class="card-title" style="margin-bottom:var(--space-4);font-size:var(--text-sm);">
-              ⚙ アニメーション設定
-            </div>
-            <div style="display:flex;flex-direction:column;gap:var(--space-4);">
-              <div class="slider-group">
-                <div class="slider-label">
-                  <span>再生時間</span>
-                  <span class="slider-value" id="durationDisplay">4秒</span>
-                </div>
-                <input type="range" id="durationSlider" min="1" max="4" step="1" value="4">
+          <div class="preview-setting-item">
+            <div class="slider-group">
+              <div class="slider-label">
+                <span>ループ回数</span>
+                <span class="slider-value" id="loopDisplay">1回</span>
               </div>
-              <div class="slider-group">
-                <div class="slider-label">
-                  <span>ループ回数</span>
-                  <span class="slider-value" id="loopDisplay">1回</span>
-                </div>
-                <input type="range" id="loopSlider" min="1" max="4" step="1" value="1">
+              <input type="range" id="loopSlider" min="1" max="4" step="1" value="1">
+            </div>
+          </div>
+          <div class="preview-setting-item">
+            <div class="form-group">
+              <label class="form-label">出力サイズ</label>
+              <select class="form-select" id="outputSize">
+                <option value="sticker">スタンプ (320×270)</option>
+                <option value="main">メイン画像 (240×240)</option>
+                <option value="tab">タブ画像 (96×74)</option>
+                <option value="custom">カスタム</option>
+              </select>
+            </div>
+          </div>
+          <div class="preview-setting-item" id="customSizeGroup" style="display:none;">
+            <div class="settings-grid">
+              <div class="form-group">
+                <label class="form-label">幅 (px)</label>
+                <input type="number" class="form-input" id="customWidth" value="320" min="1" max="1000">
               </div>
               <div class="form-group">
-                <label class="form-label">出力サイズ</label>
-                <select class="form-select" id="outputSize">
-                  <option value="sticker">スタンプ (320×270)</option>
-                  <option value="main">メイン画像 (240×240)</option>
-                  <option value="tab">タブ画像 (96×74)</option>
-                  <option value="custom">カスタム</option>
-                </select>
-              </div>
-              <div id="customSizeGroup" style="display:none;">
-                <div class="settings-grid">
-                  <div class="form-group">
-                    <label class="form-label">幅 (px)</label>
-                    <input type="number" class="form-input" id="customWidth" value="320" min="1" max="1000">
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">高さ (px)</label>
-                    <input type="number" class="form-input" id="customHeight" value="270" min="1" max="1000">
-                  </div>
-                </div>
+                <label class="form-label">高さ (px)</label>
+                <input type="number" class="form-input" id="customHeight" value="270" min="1" max="1000">
               </div>
             </div>
-          </div>
-
-          <!-- Spec Check -->
-          <div class="card card-compact" style="margin-top:var(--space-4);">
-            <div class="card-title" style="margin-bottom:var(--space-4);font-size:var(--text-sm);">
-              📋 仕様チェック
-            </div>
-            <ul class="spec-checklist" id="specChecklist">
-              <li class="spec-checklist-item" id="specSize">
-                <span class="spec-icon">⏳</span>
-                <span>画像サイズ (≤320×270)</span>
-              </li>
-              <li class="spec-checklist-item" id="specFrames">
-                <span class="spec-icon">⏳</span>
-                <span>フレーム数 (5〜20)</span>
-              </li>
-              <li class="spec-checklist-item" id="specDuration">
-                <span class="spec-icon">⏳</span>
-                <span>再生時間 (1〜4秒)</span>
-              </li>
-              <li class="spec-checklist-item" id="specLoop">
-                <span class="spec-icon">⏳</span>
-                <span>ループ (再生時間×ループ ≤ 4秒)</span>
-              </li>
-              <li class="spec-checklist-item" id="specFileSize">
-                <span class="spec-icon">⏳</span>
-                <span>ファイルサイズ (≤300KB)</span>
-              </li>
-            </ul>
           </div>
         </div>
+      </div>
+
+      <!-- プレビューエリア -->
+      <div class="card" style="margin-top:var(--space-4);">
+        <div class="canvas-container checkerboard"
+          style="display:flex;align-items:center;justify-content:center;min-height:280px;">
+          <canvas id="previewCanvas" width="320" height="270"></canvas>
+        </div>
+
+        <!-- Player Controls -->
+        <div class="player-controls" style="margin-top:var(--space-3);">
+          <button class="play-btn" id="playBtn">▶</button>
+          <div class="player-timeline" id="playerTimeline">
+            <div class="player-timeline-fill" id="playerTimelineFill" style="width:0%;"></div>
+          </div>
+          <span class="player-time" id="playerTime">0 / 0</span>
+        </div>
+      </div>
+
+      <!-- Frame strip -->
+      <div class="frame-list" id="previewFrameList" style="margin-top:var(--space-3);"></div>
+
+      <!-- 仕様チェック（プレビュー下部） -->
+      <div class="card card-compact" style="margin-top:var(--space-4);">
+        <div class="card-title" style="margin-bottom:var(--space-3);font-size:var(--text-sm);">
+          📋 仕様チェック
+        </div>
+        <ul class="spec-checklist spec-checklist-horizontal" id="specChecklist">
+          <li class="spec-checklist-item" id="specSize">
+            <span class="spec-icon">⏳</span>
+            <span>画像サイズ (≤320×270)</span>
+          </li>
+          <li class="spec-checklist-item" id="specFrames">
+            <span class="spec-icon">⏳</span>
+            <span>フレーム数 (5〜20)</span>
+          </li>
+          <li class="spec-checklist-item" id="specDuration">
+            <span class="spec-icon">⏳</span>
+            <span>再生時間 (1〜4秒)</span>
+          </li>
+          <li class="spec-checklist-item" id="specLoop">
+            <span class="spec-icon">⏳</span>
+            <span>ループ (再生時間×ループ ≤ 4秒)</span>
+          </li>
+          <li class="spec-checklist-item" id="specFileSize">
+            <span class="spec-icon">⏳</span>
+            <span>ファイルサイズ (≤300KB)</span>
+          </li>
+        </ul>
       </div>
 
       <div class="step-actions">

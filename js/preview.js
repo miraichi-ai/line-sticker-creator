@@ -69,6 +69,10 @@ const Preview = (() => {
             drawFrame(currentFrame);
             updateTimeline();
         });
+
+        // 初期状態の仕様チェック
+        adjustLoopMax();
+        updateSpecCheck();
     }
 
     /**
